@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Password Checker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,600;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #1c1a17;
+      --bg: #c8c0ae;
+      --card: #d2cab8;
+      --rule: #b0a896;
+      --accent: #b85c3a;
+      --muted: #7a7063;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, var(--rule) 27px, var(--rule) 28px);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: var(--card);
+      width: 360px;
+      padding: 36px 32px 32px 48px;
+      border: 1px solid var(--rule);
+      box-shadow: 5px 8px 0 rgba(0,0,0,0.08);
+      position: relative;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 36px;
+      width: 2px; height: 100%;
+      background: #e8b4a0;
+      opacity: 0.6;
+    }
+
+    h1 { font-family: 'Lora', serif; font-size: 24px; color: var(--ink); margin-bottom: 20px; }
+    h1 em { font-style: italic; color: var(--accent); }
+
+    label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 7px; }
+
+    .row { display: flex; gap: 7px; margin-bottom: 12px; }
+
+    input {
+      flex: 1; padding: 9px 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      color: var(--ink); background: #fff;
+      border: 1px solid var(--rule); border-bottom: 2px solid var(--ink);
+      outline: none;
+    }
+    input:focus { border-color: var(--accent); border-bottom-color: var(--accent); }
+
+    button {
+      padding: 9px 13px; border: 1px solid var(--rule); border-bottom: 2px solid var(--ink);
+      background: none; color: var(--muted); font-family: 'DM Sans', sans-serif;
+      font-size: 12px; cursor: pointer; transition: background 0.15s;
+    }
+    button:hover { background: var(--rule); color: var(--ink); }
+
+    .check { background: var(--ink); color: var(--card); border-color: var(--ink); width: 100%; margin-bottom: 12px; }
+    .check:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    .bar-track { height: 3px; background: var(--rule); margin-bottom: 5px; }
+    .bar-fill { height: 100%; width: 0; transition: width 0.4s cubic-bezier(.22,.68,0,1.2), background 0.3s; }
+
+    .bar-label { font-family: 'Lora', serif; font-style: italic; font-size: 14px; opacity: 0; transition: opacity 0.3s; }
+    .bar-label.show { opacity: 1; }
+
+    .tips { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); display: none; }
+    .tips.show { display: block; }
+    .tips p { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .tips li { font-size: 13px; color: var(--ink); list-style: none; margin-bottom: 5px; }
+    .tips li::before { content: '→ '; color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>How <em>strong</em> is<br>your password?</h1>
+
+  <label for="pw">Your password</label>
+  <div class="row">
+    <input type="password" id="pw" placeholder="Type something…" oninput="live()">
+    <button onclick="toggle(this)">Show</button>
+  </div>
+  <button class="check" onclick="check()">Check</button>
+
+  <div class="bar-track"><div class="bar-fill" id="bar"></div></div>
+  <div class="bar-label" id="lbl"></div>
+
+  <div class="tips" id="tips">
+    <p>To improve it</p>
+    <ul id="list"></ul>
+  </div>
+</div>
+
+<script>
+  const rules = [
+    [pw => pw.length >= 8,                          "Make it at least 8 characters"],
+    [pw => /[A-Z]/.test(pw),                        "Add an uppercase letter"],
+    [pw => /[a-z]/.test(pw),                        "Add a lowercase letter"],
+    [pw => /[0-9]/.test(pw),                        "Include a number"],
+    [pw => /[!@#$%^&*(),.?":{}|<>]/.test(pw),      "Add a special character"]
+  ];
+
+  const tiers = [
+    { max: 2, color: '#c0392b', word: 'Pretty weak.'    },
+    { max: 4, color: '#c47d2b', word: 'Getting there.'  },
+    { max: 5, color: '#4a7c59', word: 'Solid choice.'   }
+  ];
+
+  function score(pw) { return rules.filter(([fn]) => fn(pw)).length; }
+
+  function live() {
+    const pw = document.getElementById('pw').value;
+    const s  = score(pw);
+    const t  = tiers.find(t => s <= t.max);
+    const bar = document.getElementById('bar');
+    bar.style.width      = pw ? (s / 5 * 100) + '%' : '0';
+    bar.style.background = pw ? t.color : '';
+    const lbl = document.getElementById('lbl');
+    lbl.textContent  = pw ? t.word  : '';
+    lbl.style.color  = pw ? t.color : '';
+    lbl.classList.toggle('show', !!pw);
+  }
+
+  function check() {
+    const pw = document.getElementById('pw').value;
+    if (!pw) return;
+    const fails = rules.filter(([fn]) => !fn(pw)).map(([, msg]) => msg);
+    document.getElementById('list').innerHTML = fails.length
+      ? fails.map(f => `<li>${f}</li>`).join('')
+      : `<li style="font-family:'Lora',serif;font-style:italic;color:#4a7c59">Looks good — nothing to add.</li>`;
+    document.getElementById('tips').classList.add('show');
+  }
+
+  function toggle(btn) {
+    const pw = document.getElementById('pw');
+    pw.type      = pw.type === 'password' ? 'text' : 'password';
+    btn.textContent = pw.type === 'password' ? 'Show' : 'Hide';
+  }
+</script>
+</body>
+</html>
